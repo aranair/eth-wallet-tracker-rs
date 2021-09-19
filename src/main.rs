@@ -1,12 +1,18 @@
-use ethers::core::types::Address;
-use std::convert::TryFrom;
+// use ethers::core::types::Address;
+// use std::convert::TryFrom;
 
-use ethers::core::types::{Block, TxHash, H160, U256};
-use ethers::core::types::{Filter, ValueOrArray};
+// use ethers::core::types::{Block, TxHash, H160, U256};
+// use ethers::core::types::{Filter, ValueOrArray, H160};
+
+use notify_rust::Notification;
+
+use ethers::core::types::H160;
+use ethers::utils::WEI_IN_ETHER;
 use std::collections::HashMap;
 
-use ethers::prelude::{JsonRpcClient, Log, Middleware, PubsubClient, StreamExt};
-use ethers::providers::{Http, Provider, Ws};
+// use ethers::prelude::{JsonRpcClient, Log, Middleware, PubsubClient, StreamExt};
+use ethers::prelude::{Middleware, StreamExt};
+use ethers::providers::Provider;
 
 use gumdrop::Options;
 use structopt::StructOpt;
@@ -23,6 +29,14 @@ struct Opts {
     url: String,
 }
 
+#[derive(Deserialize, Debug)]
+struct WatchAddress {
+    address: H160,
+    name: String,
+}
+
+static SOUND: &'static str = "Ping";
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let opts = Opts::parse_args_default_or_exit();
@@ -36,6 +50,7 @@ async fn main() -> anyhow::Result<()> {
     let defigod: H160 = "0x3F3E305C4Ad49271EBDA489dd43d2c8F027d2D41".parse()?;
     let vvd: H160 = "0x0F0eAE91990140C560D4156DB4f00c854Dc8F09E".parse()?;
     let address9: H160 = "0xd5a9C4a92dDE274e126f82b215Fccb511147Cd8e".parse()?;
+    let yeastydough: H160 = "0x0d93bc9654DF5a50e0E65Df55D09BA7b47Fb95cd".parse()?;
 
     let mut address_names = HashMap::new();
     address_names.insert(tetranode, "tetranode".to_string());
@@ -46,8 +61,9 @@ async fn main() -> anyhow::Result<()> {
     address_names.insert(defigod, "defigod".to_string());
     address_names.insert(vvd, "vvd".to_string());
     address_names.insert(address9, "0x541nt".to_string());
+    address_names.insert(yeastydough, "yeastydough".to_string());
 
-    let filter = Filter::new();
+    // let filter = Filter::new();
     let mut stream = provider.subscribe_blocks().await.unwrap();
 
     while let Some(item) = stream.next().await {
@@ -68,11 +84,25 @@ async fn main() -> anyhow::Result<()> {
                 if owner == None {
                     owner = address_names.get(&txn.to.unwrap())
                 }
+
                 println!(
-                    "{} --- https://etherscan.io/tx/{:#x}",
+                    "{} --- https://etherscan.io/tx/{:#x} ({:.8})",
                     owner.unwrap(),
-                    txn.hash
+                    txn.hash,
+                    txn.value / WEI_IN_ETHER,
                 );
+
+                Notification::new()
+                    .summary(&format!(
+                        "{} txn ({:.8})",
+                        owner.unwrap(),
+                        txn.value / WEI_IN_ETHER
+                    ))
+                    .action("open", "click to open")
+                    .body(&format!("https://etherscan.io/tx/{:#x}", txn.hash))
+                    .timeout(10)
+                    .sound_name(SOUND)
+                    .show()?;
             }
         }
     }
