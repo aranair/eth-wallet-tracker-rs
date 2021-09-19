@@ -1,4 +1,3 @@
-use cli_table::{format::Justify, print_stdout, Cell, Style, Table};
 use ethers::core::types::H160;
 use ethers::prelude::{Middleware, StreamExt};
 use ethers::providers::Provider;
