@@ -7,6 +7,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.37"
+serde = { version = "1.0.104", features = ["derive"] }
 serde_json = "1.0.57"
 structopt = { version = "0.3", default-features = false }
 ethers = { git = "https://github.com/gakonst/ethers-rs", features = ["legacy", "ws", "rustls"] }
@@ -16,4 +17,4 @@ log = "0.4.14"
 gumdrop = "0.8.0"
 pretty_env_logger = "0.4.0"
 notify-rust = "4"
-toml = "0.5"
+cli-table = "0.4"

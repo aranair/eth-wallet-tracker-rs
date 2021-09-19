@@ -1,21 +1,25 @@
-// use ethers::core::types::Address;
-// use std::convert::TryFrom;
-
-// use ethers::core::types::{Block, TxHash, H160, U256};
-// use ethers::core::types::{Filter, ValueOrArray, H160};
-
-use notify_rust::Notification;
-
+use cli_table::{format::Justify, print_stdout, Cell, Style, Table};
 use ethers::core::types::H160;
-use ethers::utils::WEI_IN_ETHER;
-use std::collections::HashMap;
-
-// use ethers::prelude::{JsonRpcClient, Log, Middleware, PubsubClient, StreamExt};
 use ethers::prelude::{Middleware, StreamExt};
 use ethers::providers::Provider;
-
+use ethers::utils::WEI_IN_ETHER;
 use gumdrop::Options;
+use notify_rust::Notification;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::fs;
 use structopt::StructOpt;
+
+#[derive(Serialize, Deserialize)]
+struct WatchAddress {
+    name: String,
+    address: H160,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Watchlist {
+    watchlist: Vec<WatchAddress>,
+}
 
 /// Search for a pattern in a file and display the lines that contain it.
 #[derive(Debug, Options, StructOpt)]
@@ -29,12 +33,6 @@ struct Opts {
     url: String,
 }
 
-#[derive(Deserialize, Debug)]
-struct WatchAddress {
-    address: H160,
-    name: String,
-}
-
 static SOUND: &'static str = "Ping";
 
 #[tokio::main]
@@ -42,28 +40,15 @@ async fn main() -> anyhow::Result<()> {
     let opts = Opts::parse_args_default_or_exit();
     let provider = Provider::connect(opts.url.as_str()).await.unwrap();
 
-    let tetranode: H160 = "0x9c5083dd4838e120dbeac44c052179692aa5dac5".parse()?;
-    let jebus911: H160 = "0xEF30fA2138A725523451688279b11216B0505E98".parse()?;
-    let sam: H160 = "0x84D34f4f83a87596Cd3FB6887cFf8F17Bf5A7B83".parse()?;
-    let mevcollector: H160 = "0x5338035c008EA8c4b850052bc8Dad6A33dc2206c".parse()?;
-    let crypto888crypto: H160 = "0x0a2542a170aA02B96B588aA3AF8B09AB22a9D7ac".parse()?;
-    let defigod: H160 = "0x3F3E305C4Ad49271EBDA489dd43d2c8F027d2D41".parse()?;
-    let vvd: H160 = "0x0F0eAE91990140C560D4156DB4f00c854Dc8F09E".parse()?;
-    let address9: H160 = "0xd5a9C4a92dDE274e126f82b215Fccb511147Cd8e".parse()?;
-    let yeastydough: H160 = "0x0d93bc9654DF5a50e0E65Df55D09BA7b47Fb95cd".parse()?;
+    let watchlist_data = fs::read_to_string("watchlist.json").expect("Unable to parse watchlist");
+    let watchlist: Watchlist =
+        serde_json::from_str(&watchlist_data).expect("JSON was not well-formatted");
 
     let mut address_names = HashMap::new();
-    address_names.insert(tetranode, "tetranode".to_string());
-    address_names.insert(jebus911, "jebus911".to_string());
-    address_names.insert(sam, "sam".to_string());
-    address_names.insert(mevcollector, "mevcollector".to_string());
-    address_names.insert(crypto888crypto, "crypto888crypto".to_string());
-    address_names.insert(defigod, "defigod".to_string());
-    address_names.insert(vvd, "vvd".to_string());
-    address_names.insert(address9, "0x541nt".to_string());
-    address_names.insert(yeastydough, "yeastydough".to_string());
+    for wa in watchlist.watchlist.iter() {
+        address_names.insert(wa.address, wa.name.clone());
+    }
 
-    // let filter = Filter::new();
     let mut stream = provider.subscribe_blocks().await.unwrap();
 
     while let Some(item) = stream.next().await {
@@ -86,9 +71,9 @@ async fn main() -> anyhow::Result<()> {
                 }
 
                 println!(
-                    "{} --- https://etherscan.io/tx/{:#x} ({:.8})",
+                    "{0: <20} | {1: <90} | {2: <10}",
                     owner.unwrap(),
-                    txn.hash,
+                    &format!("https://etherscan.io/tx/{:#x}", txn.hash),
                     txn.value / WEI_IN_ETHER,
                 );
 
