@@ -11,7 +11,7 @@ Create a `watchlist.json` with the following format
   "watchlist": [
     {
       "name": "some identifier of address",
-      "address": "0x9c5111dd4838e120dbbbbbbccc2179692aaaaaaa"
+      "address": "0x0000000000000000000000000000"
     },
     ...
   ]
