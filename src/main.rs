@@ -1,7 +1,7 @@
 use ethers::core::types::H160;
 use ethers::prelude::{Middleware, StreamExt};
 use ethers::providers::Provider;
-use ethers::utils::WEI_IN_ETHER;
+use ethers::utils::format_ether;
 use gumdrop::Options;
 use notify_rust::Notification;
 use serde::{Deserialize, Serialize};
@@ -60,7 +60,9 @@ async fn main() -> anyhow::Result<()> {
             println!("skipped block");
             continue;
         }
+
         for txn in block.unwrap().transactions {
+            // dbg!(txn.clone());
             if address_names.contains_key(&txn.from)
                 || (txn.to != None && address_names.contains_key(&txn.to.unwrap()))
             {
@@ -73,14 +75,14 @@ async fn main() -> anyhow::Result<()> {
                     "{0: <20} | {1: <90} | {2: <10}",
                     owner.unwrap(),
                     &format!("https://etherscan.io/tx/{:#x}", txn.hash),
-                    txn.value / WEI_IN_ETHER,
+                    format_ether(txn.value),
                 );
 
                 Notification::new()
                     .summary(&format!(
                         "{} txn ({:.8})",
                         owner.unwrap(),
-                        txn.value / WEI_IN_ETHER
+                        format_ether(txn.value),
                     ))
                     .action("open", "click to open")
                     .body(&format!("https://etherscan.io/tx/{:#x}", txn.hash))
